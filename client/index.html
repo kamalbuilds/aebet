@@ -5,196 +5,140 @@
     <link rel="icon" href="src/assets/images/favicon.ico" />
     <link rel="stylesheet" href="src/css/styles.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>State Channel Demo</title>
+    <title>AEBet - Decentralized Betting Platform</title>
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="State Channel Demo" />
+    <meta property="og:title" content="AEBet - Decentralized Betting Platform" />
     <meta
       property="og:description"
-      content="The game of rock-paper-scissors implemented on the æternity blockchain using state channels"
-    />
-    <meta property="og:image" content="/thumbnail.png" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@aeternity" />
-    <meta name="twitter:title" content="State Channel Demo" />
-    <meta
-      name="twitter:description"
-      content="The game of rock-paper-scissors implemented on the æternity blockchain using state channels"
-    />
-    <meta
-      name="twitter:image"
-      content="https://statechannel.aepps.com/thumbnail.png"
+      content="Secure, scalable peer-to-peer betting powered by æternity state channels"
     />
   </head>
 
   <body>
     <div id="app" class="container">
-      <!-- #region Header -->
+      <!-- Header -->
       <div class="header">
         <div class="logo">
           <img src="./src/assets/images/logo.png" alt="Aeternity" />
         </div>
         <div class="center">
-          <!-- if channel is open -->
           <div class="round-info">
-            <span class="title">STATE CHANNEL DEMO GAME</span>
+            <span class="title">AEBET - DECENTRALIZED BETTING</span>
             <div class="info" style="opacity: 0">
-              <span class="stake">
-                STAKE: <span class="stake-value"></span> Æ
+              <span class="balance">
+                BALANCE: <span class="balance-value"></span> Æ
               </span>
-              <span class="info-seperator"> / </span>
-              <span class="round-wrapper"
-                >ROUND: <span class="round-index"></span
-              ></span>
+              <span class="info-separator"> | </span>
+              <span class="bet-amount">
+                BET: <span class="bet-value"></span> Æ
+              </span>
             </div>
           </div>
         </div>
         <div class="links">
-          <a
-            href="https://github.com/aeternity/state-channel-demo"
-            target="_blank"
-            class="button"
-            >Fork repo
-          </a>
-          <a id="check-explorer-btn" class="button disabled" target="_blank"
-            >Check Explorer</a
-          >
+          <button id="connect-wallet" class="button">Connect Wallet</button>
+          <button id="check-explorer" class="button disabled" target="_blank">
+            View on Explorer
+          </button>
           <button id="end-game" disabled class="button">End Game</button>
         </div>
       </div>
-      <!-- #endregion -->
-      <!-- #region Game-screen -->
+
+      <!-- Game Screen -->
       <div class="game-screen">
-        <div class="user">
+        <!-- Player Section -->
+        <div class="player-section">
           <div class="player-info">
             <div class="name">
-              You
-              <a class="address" id="user-address" target="_blank"></a>
+              Your Address
+              <a class="address" id="player-address" target="_blank"></a>
             </div>
+            <div class="balance" id="player-balance"></div>
           </div>
-          <div class="rock-paper-scissors">
-            <div class="rock-paper-scissors__header">
-              <div class="finalized-selection">
-                <!-- empty -->
-              </div>
-              <h1 class="status title"></h1>
-              <div class="finalized-selection">
-                <div class="selection-icon" style="display: none">
-                  <img
-                    src="./src/assets/images/paper.png"
-                    style="display: none"
-                  />
-                </div>
-              </div>
+
+          <!-- Betting Controls -->
+          <div class="betting-controls">
+            <div class="bet-amount-control">
+              <label for="bet-amount">Bet Amount (Æ)</label>
+              <input 
+                type="number" 
+                id="bet-amount" 
+                min="0.1" 
+                step="0.1" 
+                value="0.1"
+                disabled
+              />
             </div>
-            <div class="selections">
-              <button class="button" disabled>
-                <div class="selection-icon">
-                  <img src="./src/assets/images/rock.png" />
-                </div>
-              </button>
-              <button class="button" disabled>
-                <div class="selection-icon">
-                  <img src="./src/assets/images/paper.png" />
-                </div>
-              </button>
-              <button class="button" disabled>
-                <div class="selection-icon">
-                  <img src="./src/assets/images/scissors.png" />
-                </div>
-              </button>
-            </div>
-            <!-- #region Autoplay -->
-            <div class="autoplay disabled">
-              <label for="autoplay_button" class="toggle__button">
-                <span class="toggle__label"> Autoplay </span>
-                <input type="checkbox" id="autoplay_button" disabled />
-                <span class="toggle__switch"></span>
-              </label>
-            </div>
-            <!-- #endregion -->
+
+            <button id="place-bet" class="button primary" disabled>
+              Place Bet
+            </button>
           </div>
-          <div class="balance" id="user-balance"></div>
+
+          <!-- Game Status -->
+          <div class="game-status">
+            <h2 class="status-title"></h2>
+            <div class="status-details"></div>
+          </div>
         </div>
-        <div class="bot">
+
+        <!-- Opponent Section -->
+        <div class="opponent-section">
           <div class="player-info">
             <div class="name">
-              Bot
-              <a class="address" id="bot-address" target="_blank"></a>
+              Opponent
+              <a class="address" id="opponent-address" target="_blank"></a>
             </div>
+            <div class="balance" id="opponent-balance"></div>
           </div>
-          <div class="rock-paper-scissors">
-            <div class="rock-paper-scissors__header">
-              <div class="finalized-selection">
-                <div class="selection-icon" style="display: none">
-                  <img
-                    src="./src/assets/images/paper.png"
-                    style="display: none"
-                  />
-                </div>
-              </div>
-              <h1 class="status title"></h1>
-              <div class="finalized-selection">
-                <!-- empty -->
-              </div>
-            </div>
+
+          <div class="opponent-status">
+            <div class="status-indicator"></div>
+            <div class="status-message"></div>
           </div>
-          <div class="balance" id="bot-balance"></div>
         </div>
       </div>
-      <!-- #endregion -->
-      <!-- #region Terminal -->
+
+      <!-- Transaction History -->
       <div class="transactions">
         <div class="terminal">
           <div class="terminal__header">
-            <div class="title">Terminal</div>
-          </div>
-          <div class="ascii-text-banner">
-            <pre>
-  ______                                 _                             _         _                   
- / _____) _           _                 | |                           | |       | |                   
-( (____ _| |_ _____ _| |_ _____     ____| |__  _____ ____  ____  _____| |     __| |_____ ____   ___  
- \____ (_   _|____ (_   _) ___ |   / ___)  _ \(____ |  _ \|  _ \| ___ | |    / _  | ___ |    \ / _ \ 
- _____) )| |_/ ___ | | |_| ____|  ( (___| | | / ___ | | | | | | | ____| |   ( (_| | ____| | | | |_| |
-(______/  \__)_____|  \__)_____)   \____)_| |_\_____|_| |_|_| |_|_____)\_)   \____|_____)_|_|_|\___/ 
-                                                                                  powered by Æternity
-            </pre>
+            <div class="title">Transaction History</div>
           </div>
           <div class="terminal__info">
             <p>
-              State channels refer to the process in which users transact with
-              one another directly outside of the blockchain, or ‘off-chain,’
-              and greatly minimize their use of ‘on-chain’ operations.
-            </p>
-            <p>
-              By clicking start game you are initiating state channel with our
-              bot and you make the possibilities of the game practically
-              endless. After the game is over, you can see every action recorded
-              on the blockchain by checking our explorer.
-            </p>
-            <p>
-              When being <strong>idle for 2 minutes</strong>, a timeout is
-              triggered and the state channel closes.
+              All bets are processed through state channels for instant settlement
+              and zero fees. Only the final results are posted on-chain.
             </p>
           </div>
           <div class="notification info" id="logs-notification">
             <div class="notification-text">
-              After reconnecting only the last 5 rounds are saved.
+              Channel transactions are private between participants.
             </div>
             <img
               src="./src/assets/svg/close.svg"
               alt="x"
               id="logs-notification-close"
-              @click="closeNotification()"
             />
           </div>
           <div class="transactions-list"></div>
         </div>
       </div>
-      <!-- #endregion -->
-      <div id="end-screen" class="end-screen">
-        <!-- end-screen -->
+
+      <!-- Game Result Modal -->
+      <div id="result-modal" class="modal">
+        <div class="modal-content">
+          <h2 class="result-title"></h2>
+          <div class="result-details"></div>
+          <div class="result-actions">
+            <button id="play-again" class="button">Play Again</button>
+            <button id="close-channel" class="button">Close Channel</button>
+          </div>
+        </div>
       </div>
     </div>
+
+    <!-- Scripts -->
     <script type="module" src="main.js"></script>
   </body>
 </html>
