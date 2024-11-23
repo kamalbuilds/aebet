@@ -1,192 +1,287 @@
-# State Channels
-State Channels allow entities to communicate with each other with the goal of collectively computing some function `f`. This `f` can be any agreement expressed in Smart Contract logic and just like any legal contract, we need an arbiter in case one party tries to act maliciously. This arbiter is the blockchain. 
-For more information visit [here](https://github.com/aeternity/protocol/tree/master/channels)
+# AEBet - Decentralized Betting Platform
+> Secure, scalable peer-to-peer betting powered by æternity state channels
 
-# State Channel Demo
-A demo use case of æternity's State Channels. Users can play a thousand+ rounds of rock-paper-scissors games through the æternity blockchain by deploying a game-rules Smart Contract into State Channels.
+## Problem Statement
+Traditional online betting platforms face several challenges:
+- High transaction fees eating into user profits
+- Slow settlement times
+- Lack of transparency in odds and payouts
+- Centralized control of user funds
+- Limited scalability during peak betting periods
+- Privacy concerns around betting activity
 
-<img width="1411" alt="image" src="https://user-images.githubusercontent.com/10965573/201765249-c71b0d18-4fce-4b03-a65b-5ee1f4ae18d9.png">
+## Solution
+AEBet leverages æternity's state channels to enable:
+- Off-chain betting with near-instant settlements
+- Zero-fee transactions between players
+- Fully transparent and verifiable betting logic
+- Non-custodial betting (users control their funds)
+- Private betting activity (only final settlements on-chain)
+- Highly scalable infrastructure for concurrent betting
 
+## Key Features
 
-# Table of Contents 
-1. [Installation](#installation)
-2. [Running Options](#running-options)
-3. [Channel Communication between Apps](#channel-communication-between-apps)
-4. [Helpful links](#helpful-links)
+### 1. State Channel Betting
+- Direct peer-to-peer betting through state channels
+- Instant bet placement and settlement
+- Automatic payment distribution
+- Privacy-preserving off-chain transactions
+- Dispute resolution mechanism
 
-**[Coding Tutorial: Step by step channel guide](TUTORIAL.md)**
+### 2. Smart Contract Security  
+- Sophia smart contracts with formal verification
+- Automated escrow of betting funds
+- Fair and transparent betting logic
+- Built-in timeout and dispute handling
+- Emergency withdrawal mechanisms
 
-# Installation 
+### 3. Scalable Architecture
+- Elixir/OTP middleware for high concurrency
+- Connection pooling for channel management
+- Automatic channel recovery and reconnection
+- Load balancing of betting channels
+- Efficient state synchronization
+
+## Architecture
+
+### Components
+
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│     Client      │     │     Server       │     │   Blockchain    │
+│  (TypeScript)   │◄────┤  (Node.js/Elixir)│◄────┤   (Aeternity)  │
+└─────────────────┘     └──────────────────┘     └─────────────────┘
+        │                        │                        │
+        │                        │                        │
+    Channel Client         Channel Service          State Channels
+        │                        │                        │
+        │                        │                        │
+   User Interface         Channel Manager           Smart Contracts
+
+### Layers
+
+1. **Smart Contract Layer** (`contracts/Betting.aes`)
+- Manages betting state and logic
+- Handles bet placement and resolution
+- Controls fund distribution
+- Implements dispute resolution
+- Emits events for tracking
+
+2. **Channel Service Layer** (`server/src/channel-service.ts`)
+- Manages state channel lifecycle
+- Handles channel errors and recovery
+- Synchronizes state between parties
+- Processes betting events
+- Manages channel connections
+
+3. **Client Layer** (`client/src/channel-client.ts`)
+- Provides user interface
+- Manages wallet connections
+- Handles channel state
+- Signs transactions
+- Processes user actions
+
+4. **Middleware Layer** (`lib/channel_middleware.ex`)
+- Manages concurrent channels
+- Handles connection pooling
+- Provides load balancing
+- Ensures state persistence
+- Processes channel events
+
+## Implementation Details
+
+### Smart Contract (`Betting.aes`)
+```sophia
+payable contract Betting =
+  record state = {
+    player1: address,
+    player2: address,
+    bet_amount: int,
+    game_state: int,
+    winner: option(address)
+  }
+```
+
+### Channel Client (`channel-client.ts`)
+```typescript
+export class ChannelClient {
+  async placeBet(amount: number) {
+    return this.channel.callContract({
+      amount,
+      contract: this.config.contractAddress,
+      abiVersion: 1,
+      callData: 'cb_place_bet'
+    });
+  }
+}
+```
+
+### Channel Service (`channel-service.ts`)
+```typescript
+export class ChannelService {
+  private channels: Map<string, Channel> = new Map();
+  
+  async createChannel(config: ChannelOptions): Promise<Channel> {
+    const channel = await Channel.initialize(config);
+    this.channels.set(channel.id(), channel);
+    return channel;
+  }
+}
+```
+
+## Setup & Installation
+
+1. **Prerequisites**
+```bash
+# Install Node.js dependencies
+npm install
+
+# Install Elixir dependencies
+mix deps.get
+
+# Start Aeternity node
+docker-compose up -d
+```
+
+2. **Environment Configuration**
+```bash
+# .env
+AE_NODE_URL=http://localhost:3013
+AE_COMPILER_URL=http://localhost:3080
+AE_NETWORK_ID=ae_devnet
+CHANNEL_RESERVE=10000
+```
+
+3. **Start Services**
+```bash
+# Start middleware
+mix run --no-halt
+
+# Start backend
+npm run start:server
+
+# Start frontend
+npm run start:client
+```
+
+## Usage Guide
+
+### 1. Initialize Channel
+```typescript
+const client = new ChannelClient({
+  url: 'wss://testnet.aeternity.io/channel',
+  role: 'initiator',
+  initiatorId: 'ak_initiator...',
+  responderId: 'ak_responder...',
+  initiatorAmount: 10000,
+  responderAmount: 10000
+});
+
+await client.init();
+```
+
+### 2. Place Bet
+```typescript
+// Place bet with amount
+await client.placeBet(100);
+```
+
+### 3. Resolve Game
+```typescript
+// Resolve game with winner
+await client.resolveGame('ak_winner...');
+```
+
+### 4. Close Channel
+```typescript
+// Close channel and settle
+await client.closeChannel();
+```
+
+## Error Handling
+
+1. **Channel Errors**
+- Automatic reconnection on timeout
+- Graceful shutdown on fatal errors
+- State recovery after disconnection
+- Transaction verification
+
+2. **Contract Errors**
+- Invalid state transitions
+- Insufficient funds
+- Unauthorized actions
+- Timeout handling
+
+## Testing
 
 ```bash
-cd contract && npm install
-cd ../client && npm install
-cd ../server && npm install
+# Run contract tests
+npm run test:contract
+
+# Run channel service tests
+npm run test:service
+
+# Run integration tests
+npm run test:integration
 ```
-The subsequent steps require [docker compose](https://docs.docker.com/compose/install) and [NodeJS >= 16](https://nodejs.org/en/download)
-> 💚 Interested in the vue.js version? You can find it [here](https://github.com/aeternity/state-channel-demo/tree/vuejs)
 
-# Running options
-## Local Node and not on connected with an æternity network
+## Deployment
 
-|Terminal #number |  Explanation  |       Command     |
-|:----------:|:-------------:|------|
-|#1 | Start node |  `docker-compose up` |
-|#2 | Start server |    `cd server && npm run dev`   |
-|#3 | Start client | `cd client && npm run dev` |
+1. **Local Development**
+```bash
+npm run deploy:local
+```
 
-## Deployed node and on testnet
+2. **Testnet Deployment**
+```bash
+npm run deploy:testnet
+```
 
-|Terminal #number |  Explanation  |       Command     |
-|:----------:|:-------------:|------|
-|#1 | Start server |    `cd server && npm run dev:testnet`   |
-|#2  | Start client | `cd client && npm run dev:testnet` |
+3. **Mainnet Deployment**
+```bash
+npm run deploy:mainnet
+```
 
-## Services
+## Security Considerations
 
-| name             | port |
-| ---------------- | ---- |
-| frontend | 8000 |
-| backend - nodejs | 3000 |
-| æternity node   | 3013 |
-| Sophia Compiler  | 3080 |
-| Websocket server | 3014 |
+### 1. Channel Security
+- Regular state verification
+- Timeout monitoring
+- Dispute resolution
+- Emergency withdrawals
 
+### 2. Contract Security
+- Access control
+- State validation
+- Fund protection
+- Event monitoring
 
+### 3. Infrastructure Security
+- Encrypted communication
+- Rate limiting
+- Input validation
+- Error logging
 
-# Channel Communication between Apps
+## Contributing
 
-![Communication Diagram](./demo-communiation-diagram.jpg)
+1. Fork repository
+2. Create feature branch (`git checkout -b feature/xyz`)
+3. Commit changes (`git commit -am 'Add xyz'`)
+4. Push branch (`git push origin feature/xyz`)
+5. Create Pull Request
 
+## Resources
 
-## Introduction
+- [Aeternity Documentation](https://docs.aeternity.com/)
+- [State Channels Guide](https://github.com/aeternity/protocol/blob/master/channels/README.md)
+- [Sophia Language Docs](https://docs.aeternity.com/sophia/)
+- [SDK Reference](https://docs.aeternity.com/aepp-sdk-js/)
 
-Except the funding & channel initialization phase (further explained below) where the demo accounts are funded and the required information for channel initialization is exchanged, the client application (frontend) and the server application (backend) always communicate via WebSocket to their configured node.
+## License
 
-The æternity node runs 3 processes for each State Channel that a user initializes:
-- WebSocket connector which handles communication between client and node
-- Finite State Machine (FSM) which is responsible for:
-    - Enabling validation of State Channel transactions through root hash.
-    - Building and enriching State Channel trees.
-    - Tracking any possible disputes.
-    - Warning the client so one could take an appropriate action.
-- enoise connector which handles encrypted communication between æternity nodes via [Noise Protocol](https://noiseprotocol.org)
+MIT License - see LICENSE.md
 
+## Contact
 
-Note:
-- While these 3 processes in the æternity node abstract a lot of the complexity from the developers and users, it is not required to use it. Depending on the use case, you might want to develop your own implementation to handle off-chain communication & updates (transactions). In any case you should make sure to keep track of on-chain State Channel updates by connecting to an æternity node to react in case the counterparty tries to cheat you.
-- The demo currently uses the same æternity node for both, the client application and the server application. The behavior is the same as if client and server application would both use their own node, which is how it is displayed in the communication diagram above.
-
-
-## Server application / Backend
-
-The server application (backend) can be seen as the game session manager. It is responsible for:
-
-- **Funding Phase**
-  - Accept requests from users (channel `responder`) that provide their:
-    - Account address (ak_...)
-    - Node host (e.g. http://localhost:8000)
-    - Node port (e.g. 3013)
-  - Generate a new account (bot player - channel `initiator`) for each request
-  - Fund the bot player account by requesting coins from [Faucet æpp](https://faucet.aepps.com/)
-  - Respond to users request with the mutual channel configuration. Read more about the channel configuration [here](https://github.com/aeternity/protocol/blob/master/node/api/channels_api_usage.md#channel-establishing-parameters)
-
-- **Channel Initialization Phase**
-  - When both accounts have enough funds, the server app will run `Channel.Initialize(channelConfig)` which will execute the on-chain transaction `ChannelCreateTx` and proceed in a listening-for-events state such as a 'channel open' confirmation
-  - Also, as the initiator, bots are responsible for deploying the contract on channel.
-  
-- **Game Rounds** 
-  - One channel configuration option is the `sign` function. This function runs whenever any party executes an off-chain transaction which needs to be co-signed by both parties. Therefore whenever the other party makes their move, we can confirm it here and then respond with a next contract call.
-  
-- **Closing Phase**
-  - Scenario 1: User wants to close the channel
-    - In this happy path, the user calls an on-chain transaction called `ChannelCloseMutualTx`. The bot co-signs it and the final channel state is posted on-chain. The corresponding balances are returned to their owners and the channel status is finalized in `closed`.
-  - Scenario 2: User went idle - timeout occured
-    - If the channel status changes to `died`, we assume that the user closed their window and a timeout occured. In this case, in order for the channel to close, the bot has to:
-      - Execute on-chain [`ChannelCloseSoloTx`](https://github.com/aeternity/protocol/blob/master/channels/ON-CHAIN.md#channel_close_solo)
-      - Execute on-chain [`ChannelSettleTx`](https://github.com/aeternity/protocol/blob/master/channels/ON-CHAIN.md#channel_settle). Keep in mind that there's a window where the user can dispute the channel closure. This window is defined in the channel configuration with the `lockPeriod` option. In this demo, `0` is used as value in order to reduce delays.
-
-
-## Client application / Frontend
-
-On the other hand, the **client application** (frontend) is responsible to do the following:
-- Generate a new local player account
-- Fund the local player account by requesting coins from [Faucet æpp](https://faucet.aepps.com/)
-- POST request to the server application (in order to fetch the mutual channel configuration) by providing:
-  - Account address (ak_...)
-  - Node host (e.g. http://localhost:8000)
-  - Node port (e.g. 3013)
-- Initialize a channel with the given configuration
-- Verify that the deployed contract has the correct source code
-- Respond to other party's actions
-- Execute `ChannelCloseMutualTx`
-- Reconnect to channel in cases of window reload
-
-Note:
-- After the closing phase, both (client & server application) will send the funds back to the Faucet æpp.
-
-# FAQ
-
-## How do I build my own State Channel application?
-
-You can find the steps at the complete [State Channel Tutorial Guide](TUTORIAL.md).
-
-
-## Is State Channel Demo provably fair?
-
-Short answer: yes!
-
-State Channels offer an innovative solution, where off-chain transactions are executed on top of blockchain technology. The State Channel protocol inherently offers security to the demo!
-
-State Channel transactions are ruled by co-signed Smart Contracts. Each party shall verify the content of a transaction before signing it. Off-chain transactions are performed by applying a list of operations on the off-chain state trees, then generating a new `ChannelOffchainTx` with an incremented round and updated state tree root hash. The updates themselves are not included in the `ChannelOffchainTx` for privacy reasons. The updates supported are:
-
-- `update_transfer` (move amount from one channel participant to the other)
-- `update_deposit` (the offchain part of a ChannelDepositTx)
-- `update_withdrawal` (the offchain part of a ChannelWithdrawalTx)
-- `update_create_contract`
-  - showcased in demo
-- `update_call_contract`
-  - showcased in demo
-
-Note: Serializations described [here](https://github.com/aeternity/protocol/blob/master/serializations.md#table-of-object-tags) and [here](https://github.com/aeternity/protocol/blob/master/serializations.md#channel-off-chain-update)
-
-State Channel Demo Game verifies counterparty transactions. At each transaction, calldata content is decoded utilizing æternity's [calldata lib](https://github.com/aeternity/aepp-calldata-js) which is integrated in the SDK. Each party can utilize this library in order to verify that the opponent is following the anticipated flow of the game (calling the right contract methods). If they accept opponent's transaction, then they can co-sign it, otherwise they will refuse to co-sign.
-
-## How do State Channel Demo Game transactions take place?
-
-Rock, paper, scissors expects the players to make their moves simultaneously, but in the State Channels implementation, it needs to be implemented as a turn based game, where the move of each player needs to be co-signed by the opponent in order to be executed. In order to prevent cheating, the move of the initial player is hashed. The other party receives the off-chain transaction with calldata containing the hash, where he/she can **only confirm** the function the opponent called (e.g. opponent picked a move) but not see the actual move.
-
-After co-signing the opponent's hashed move, the next required step is for the second player to make his/her move. This is achieved by calling the corresponding contract method which does not hash the pick (the opponent's move is already sealed in the channel's state tree).
-
-Now that both players have picked, the contract requires from the first player to reveal his move. Revealing is required as only the first player has the key to the hash. With the execution of it, the winning party receives the stake. In the case of a draw, the stake is returned to both players.
-
-
-## If one party refuses to reveal their move, how this can be disputed?
-
-At first player's side, he/she can inspect the calldata (second player non-hashed move), examine the move the opponent picked and choose to make an inappropriate action (e.g. not revealing his move, because he/she found out that will lose after inspecting opponent's move). 
-
-The `RockPaperScissors` Demo Smart Contract provides disputing methods to use on-chain with `ForceProgressTx`, such as [`player1_dispute_no_reveal`](https://github.com/aeternity/state-channel-demo/blob/develop/contract/contracts/RockPaperScissors.aes#L96) which can be used in cases where the first player did not reveal his move.
-
-In that case, the second player can raise an on-chain dispute utilizing transaction force progress mechanism [ForceProgressTx`](https://github.com/aeternity/protocol/blob/master/channels/ON-CHAIN.md#forcing-progress). 
-
-With a force progress transaction, the contract state is broadcast on-chain where the game move is confirmed by on-chain computation.
-
-Note:
-- Hashing the move is required in this demo because a winner will be determined based on a decision which should happen simultaneously. For this reason, a reaction time is defined in the Smart Contract. The `ForceProgressTx` will only be successful, if the defined reaction time has passed. 
-- Considering that the game would be "4 wins", the moves wouldn't need to be hashed. Every move could be open. In this case it would be more likely that the opponent refuses to co-sign the winning move. In such scenario, a `ForceProgressTx` can immediately be executed to enforce the winning move, because no reaction time is needed.
-
-
-
-
-# Helpful Links
-- **[State Channel Demo Page](https://statechannel.aepps.com)**
-- **[State Channel Demo Tutorial](TUTORIAL.md)**
-- [On-Chain channel transactions](https://github.com/aeternity/protocol/blob/master/channels/ON-CHAIN.md)
-- [Off-Chain channel transactions](https://github.com/aeternity/protocol/blob/master/channels/OFF-CHAIN.md)
-- [Channels API usage](https://github.com/aeternity/protocol/blob/master/node/api/channels_api_usage.md)
-- [Channel WS API](https://github.com/aeternity/protocol/blob/master/node/api/channel_ws_api.md)
-- [Node level channel examples](https://github.com/aeternity/protocol/tree/master/node/api/examples/channels)
-- [Aeternity Node API](https://api-docs.aeternity.io/) 
-- [Aeternity SDK](https://github.com/aeternity/aepp-sdk-js)
-- [Run an Aeternity Node with Docker](https://docs.aeternity.io/en/stable/docker/)
-- **[Back to repo](https://github.com/aeternity/state-channel-demo)**
+- GitHub: [@aebet](https://github.com/aebet)
+- Twitter: [@aebet_official](https://twitter.com/aebet_official)
+- Discord: [AEBet Community](https://discord.gg/aebet)
