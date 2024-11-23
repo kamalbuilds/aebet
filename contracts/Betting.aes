@@ -1,0 +1,41 @@
+include "String.aes"
+
+payable contract Betting =
+  
+  record state = {
+    player1: address,  // First player
+    player2: address,  // Second player
+    bet_amount: int,   // Amount each player bets
+    game_state: int,   // 0=new, 1=player1_bet, 2=player2_bet, 3=complete
+    winner: option(address) // Winner's address if game complete
+  }
+
+  stateful entrypoint init(player1: address, player2: address) : state =
+    require(player1 != player2, "Players must be different")
+    { player1 = player1,
+      player2 = player2, 
+      bet_amount = 0,
+      game_state = 0,
+      winner = None }
+
+  payable stateful entrypoint place_bet() : unit =
+    require(Call.value > 0, "Bet amount must be positive")
+    require(state.game_state < 2, "Game already has two bets")
+    
+    switch(state.game_state)
+      0 => 
+        require(Call.caller == state.player1, "Only player1 can bet first")
+        put(state{ bet_amount = Call.value, game_state = 1 })
+      1 =>
+        require(Call.caller == state.player2, "Only player2 can bet second") 
+        require(Call.value == state.bet_amount, "Bet must match player1")
+        put(state{ game_state = 2 })
+
+  stateful entrypoint resolve(winner: address) : unit =
+    require(state.game_state == 2, "Game not ready for resolution")
+    require(winner == state.player1 || winner == state.player2, "Invalid winner")
+    
+    Chain.spend(winner, Contract.balance)
+    put(state{ game_state = 3, winner = Some(winner) })
+
+  entrypoint get_state() : state = state 
